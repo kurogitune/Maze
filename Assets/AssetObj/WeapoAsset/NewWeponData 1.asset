@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ede46caeca6ccd848b7dececd22c5061, type: 3}
+  m_Name: NewWeponData 1
+  m_EditorClassIdentifier: 
+  WeponNo: 2
+  WeaponName: "\u30CF\u30F3\u30C9\u30AC\u30F3"
+  Canibuy: 1
+  Buymoney: 50
+  CaniSell: 1
+  Sellmoney: 5
+  OffensiveP: 10
+  DefenseP: 0
+  LoadingBullet: 7
+  Type: 2
+  ExplanatoryText: "\u3044\u305F\u3063\u3066\u666E\u901A\u306E\u30CF\u30F3\u30C9\u30AC\u30F3"

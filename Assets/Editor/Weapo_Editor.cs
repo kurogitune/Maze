@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using System.IO;
-using System;
 using Object = UnityEngine.Object;//Objectの定義を指定
 
 public class Weapo_Editor : EditorWindow//武器エディタ
 {
-
     static string AssetFileName = "/AssetObj/WeapoAsset";//武器アセットオブジェクトの保存先フォルフダー
+    static string AssetListFileName = "/AssetObj/AsstList";
+    static string WeaponListDataPath = "/AssetObj/AsstList/WeapoDataList.asset";//リストの保存先のパス
+    static WeponList WeponList = null;
     [MenuItem("Editor/WeapoEditor %#Z")]
     static void Open()
     {
@@ -26,14 +27,42 @@ public class Weapo_Editor : EditorWindow//武器エディタ
             Debug.Log("WeapoAssetフォルダー作成");
             AssetDatabase.Refresh();//Unityのファイル表示を更新  
         }
+
+        if (!Directory.Exists(Application.dataPath + AssetListFileName))
+        {
+            Directory.CreateDirectory(Application.dataPath + AssetListFileName);
+            Debug.Log("AsstListフォルダー作成");
+            AssetDatabase.Refresh();//Unityのファイル表示を更新  
+        }
+
+        if (!File.Exists(Application.dataPath + WeaponListDataPath))
+        {
+            AssetDatabase.CreateAsset(new WeponList(), "Assets" + WeaponListDataPath);//ない場合作成
+            WeponList = (WeponList)AssetDatabase.LoadAssetAtPath("Assets" + WeaponListDataPath, typeof(WeponList));//ある場合データファイルロード
+        }
+        else
+        {
+            WeponList = (WeponList)AssetDatabase.LoadAssetAtPath("Assets" + WeaponListDataPath, typeof(WeponList));//ある場合データファイルロード
+        }
         GetWindow<Weapo_Editor>("WeapoEditor"); // タイトル名を指定
     }
 
 
+    int SetNo;//選択アイテム番号　
+    int SelctitemNo = -1;//セレクト番号
+
     //こいつらは処理用
-    string WeapoName="";//武器名前
-    int  ItemNo, SelctitemNo=-1;//武器番号　　選択アイテム番号　セレクト番号
-    int WeapoNo;
+    string WeaponName = "";//武器名前
+    int WeapoNo;//武器番号
+    bool Canibuy;//買えるか
+    int Buymoney;//買う金額
+    bool CaniSell;//売れるか
+    int Sellmoney;//買取金額
+    int OffensiveP;//攻撃力 
+    int DefenseP;//防御力
+    int LoadingBullet;//残弾数
+    WeponType Type;//武器タイプ
+    string ExplanatoryText;//説明文
 
     //左表示関連
     WeaponData[] WeaponDataList=new WeaponData[0];//データ
@@ -72,7 +101,7 @@ public class Weapo_Editor : EditorWindow//武器エディタ
                         {
                             if (GUILayout.Button(WeaponDataList[i].WeaponName))
                             {
-                                if (i != ItemNo) ItemNo = i;
+                                if (i != SetNo) SetNo = i;
                             }
                             GUI.backgroundColor = GUI.color;
                         }
@@ -82,7 +111,7 @@ public class Weapo_Editor : EditorWindow//武器エディタ
                 else
                 {
                     EditorGUILayout.LabelField("NoData");
-                    WeapoName = "";
+                    WeaponName = "";
                     WeapoNo = 0;
 
                 }
@@ -96,46 +125,101 @@ public class Weapo_Editor : EditorWindow//武器エディタ
               { 
 
                 EditorGUI.BeginDisabledGroup(WeaponDataList.Length == 0);//こいつで囲んだボタンをおせなくする
-                if(WeaponDataList.Length!=0) EditorGUILayout.LabelField("武器データ変更 : "+ WeaponDataList[ItemNo].WeaponName);
+                if(WeaponDataList.Length!=0) EditorGUILayout.LabelField("武器データ変更 : "+ WeaponDataList[SetNo].WeaponName);
                 else EditorGUILayout.LabelField("武器データ変更");
 
-               
-              }
+                    WeaponName = EditorGUILayout.TextField("武器名前", WeaponName);
+                    WeapoNo = EditorGUILayout.IntField("武器番号変更",WeapoNo);
 
-                EditorGUI.EndDisabledGroup();//ここまで
+                    Canibuy = EditorGUILayout.Toggle("買えるか",Canibuy);
+                    EditorGUI.BeginDisabledGroup(!Canibuy);
+                    Buymoney = EditorGUILayout.IntField("販売価格",Buymoney);
+                    if (!Canibuy) Buymoney = 0;
+                    EditorGUI.EndDisabledGroup();
 
-                    if (WeaponDataList.Length != 0)//代入先がある場合
+                    CaniSell = EditorGUILayout.Toggle("売れるか", CaniSell);
+                    EditorGUI.BeginDisabledGroup(!CaniSell);
+                    Sellmoney = EditorGUILayout.IntField("買取価格", Sellmoney);
+                    if (!CaniSell) Sellmoney = 0;
+                    EditorGUI.EndDisabledGroup();
+
+                    Type =(WeponType) EditorGUILayout.EnumPopup("装備タイプ",Type);
+                    switch (Type)
                     {
-                        if (ItemNo != SelctitemNo)//代入先が変更されたら
-                        {
-                            SelctitemNo = ItemNo;
-                            DataReset();                     
-                        }
+                        case WeponType.Nodata:
+                            EditorGUILayout.LabelField("設定項目なし");
+                            LoadingBullet = DefenseP = OffensiveP = 0;
+                            break;
 
-                        using (new EditorGUILayout.HorizontalScope(GUI.skin.box))
-                        {
-                            bool Data_change = true;
+                        case WeponType.Armor://防具
+                            LoadingBullet = OffensiveP = 0;
+                            DefenseP = EditorGUILayout.IntField("防御力",DefenseP);
+                            break;
 
-                            if (Data_change) Data_change = false;//データが更新されたか
-
-                            EditorGUI.BeginDisabledGroup(Data_change);//こいつで囲んだボタンをおせなくする
-                            if (GUILayout.Button("Reset"))
-                            {
-                                DataReset();
-                            }
-
-                            if (GUILayout.Button("Save"))
-                            {
-                                //データ保存
-                               
-                                EditorUtility.SetDirty(WeaponDataList[SelctitemNo]);//指定したScriptObject変更を記録
-                                AssetDatabase.SaveAssets();//ScriptObjectをセーブする
-                                DataReset();
-                            }
-                            EditorGUI.EndDisabledGroup();//ここまで
-                        }
+                        case WeponType.LongFistance://遠距離
+                            DefenseP = 0;
+                            OffensiveP = EditorGUILayout.IntField("攻撃力", OffensiveP);
+                            LoadingBullet = EditorGUILayout.IntField("装填数",LoadingBullet);
+                            break;
+                        case WeponType.ShortDistance://近距離
+                            LoadingBullet = DefenseP = 0;
+                            OffensiveP = EditorGUILayout.IntField("攻撃力", OffensiveP);
+                            break;
                     }
-                    EditorGUILayout.EndScrollView();
+
+                    ExplanatoryText = EditorGUILayout.TextField("説明文",ExplanatoryText);
+              }
+              EditorGUI.EndDisabledGroup();//ここまで
+
+
+              if (WeaponDataList.Length != 0)//代入先がある場合
+              {
+                  if (SetNo != SelctitemNo)//代入先が変更されたら
+                  {
+                      SelctitemNo = SetNo;
+                      DataReset();                     
+                  }
+
+                  using (new EditorGUILayout.HorizontalScope(GUI.skin.box))
+                  {
+                      bool Data_change = true;
+
+                        if (WeaponDataList[SelctitemNo].WeponNo != WeapoNo || WeaponDataList[SelctitemNo].WeaponName != WeaponName
+                           || WeaponDataList[SelctitemNo].Canibuy != Canibuy || WeaponDataList[SelctitemNo].Buymoney != Buymoney 
+                           || WeaponDataList[SelctitemNo].OffensiveP != OffensiveP || WeaponDataList[SelctitemNo].DefenseP != DefenseP
+                           || WeaponDataList[SelctitemNo].Type != Type || WeaponDataList[SelctitemNo].LoadingBullet != LoadingBullet
+                           || WeaponDataList[SelctitemNo].ExplanatoryText != ExplanatoryText || WeaponDataList[SelctitemNo].CaniSell != CaniSell
+                           || WeaponDataList[SelctitemNo].Sellmoney != Sellmoney) Data_change = false;//データが更新されたか
+
+                        EditorGUI.BeginDisabledGroup(Data_change);//こいつで囲んだボタンをおせなくする
+                        if (GUILayout.Button("Reset"))
+                        {
+                            DataReset();
+                        }
+
+                        if (GUILayout.Button("Save"))
+                        {
+                          //データ保存
+                            WeaponDataList[SelctitemNo].WeponNo=WeapoNo;
+                            WeaponDataList[SelctitemNo].WeaponName= WeaponName;
+                            WeaponDataList[SelctitemNo].Canibuy= Canibuy;
+                            WeaponDataList[SelctitemNo].Buymoney = Buymoney;
+                            WeaponDataList[SelctitemNo].CaniSell = CaniSell;
+                            WeaponDataList[SelctitemNo].Sellmoney = Sellmoney;
+                            WeaponDataList[SelctitemNo].OffensiveP = OffensiveP;
+                            WeaponDataList[SelctitemNo].DefenseP = DefenseP;
+                            WeaponDataList[SelctitemNo].LoadingBullet= LoadingBullet;
+                            WeaponDataList[SelctitemNo].Type = Type;
+                            WeaponDataList[SelctitemNo].ExplanatoryText = ExplanatoryText;
+
+                            EditorUtility.SetDirty(WeaponDataList[SelctitemNo]);//指定したScriptObject変更を記録
+                            AssetDatabase.SaveAssets();//ScriptObjectをセーブする
+                            DataReset();
+                        }
+                        EditorGUI.EndDisabledGroup();//ここまで
+                  }
+              }
+              EditorGUILayout.EndScrollView();
               
             }//ここまで
         }
@@ -153,6 +237,17 @@ public class Weapo_Editor : EditorWindow//武器エディタ
 
     void DataReset()//一時保存データ初期化
     {
+        WeapoNo = WeaponDataList[SelctitemNo].WeponNo;
+        WeaponName = WeaponDataList[SelctitemNo].WeaponName;
+        Canibuy = WeaponDataList[SelctitemNo].Canibuy;
+        Buymoney = WeaponDataList[SelctitemNo].Buymoney;
+        CaniSell = WeaponDataList[SelctitemNo].CaniSell;
+        Sellmoney = WeaponDataList[SelctitemNo].Sellmoney;
+        OffensiveP = WeaponDataList[SelctitemNo].OffensiveP;
+        DefenseP = WeaponDataList[SelctitemNo].DefenseP;
+        LoadingBullet = WeaponDataList[SelctitemNo].LoadingBullet;
+        Type = WeaponDataList[SelctitemNo].Type;
+        ExplanatoryText = WeaponDataList[SelctitemNo].ExplanatoryText;
     }
 
     void File_Set()//ファイル追加処理
@@ -171,5 +266,10 @@ public class Weapo_Editor : EditorWindow//武器エディタ
             AssetDatabase.CreateAsset(Savedata, pas);
             AssetDatabase.Refresh();
         }
+    }
+
+    private void OnDestroy()
+    {
+        WeponList.DataList = WeaponDataList;
     }
 }

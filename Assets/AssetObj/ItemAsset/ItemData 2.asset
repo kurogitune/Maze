@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c59a0b6f8cc4ac943a906baacee22da5, type: 3}
+  m_Name: ItemData 2
+  m_EditorClassIdentifier: 
+  ItemNo: 3
+  ItemName: "\u56DE\u5FA9\u85AC\u6700\u5927"
+  Canibuy: 1
+  Buymoney: 50
+  CaniSell: 1
+  Sellmoney: 5
+  RecoveryP: 100
+  Type: 1
+  ExplanatoryText: "\u6700\u5927\u306E\u56DE\u5FA9\u85AC\u3002\u4E0D\u5473\u3055\u3082\u6700\u5927\u6025!?"
