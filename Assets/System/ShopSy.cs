@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-
+using Exception;
 public class ShopSy : MonoBehaviour
 {
     [Header("店のUIオブジェクト")]
@@ -15,18 +15,25 @@ public class ShopSy : MonoBehaviour
     public Image BackImag;
     [Header("売る買うかを選択するUI")]
     public GameObject ShopSelctUI;
+    [Header("上記のボタン初期位置")]
+    public Button SyokiButton;
     [Header("買うUI")]
     public GameObject BuyShopUI;
     [Header("売るUI")]
     public GameObject SellShopUI;
+    [Header("販売売却ボタン表示UI")]
+    public GameObject BuSeUI;
     [Header("所持金表示テキスト")]
     public Text ManeyText;
     [Header("武器防具リスト")]
     public WeponList WeponDataList;
     [Header("アイテムリスト")]
     public ItemList ItemDataList;
+    [Header("販売売却のボタン管理")]
+    public BuySellSelctSy BuSeSy;
+    [Header("個数選択UI")]
+    public GameObject CountSelctUI;
 
-    AudioSource SEPlayer;
     public AudioClip Se;
 
     PlayerTes PlayerSy;//プレイヤースクリプト
@@ -37,16 +44,20 @@ public class ShopSy : MonoBehaviour
     string TextSt;//表示する文字
     int BunCount, Bun;//文字数　現在の文字数
     float TTime;//テキスト表示間隔管理用
-    bool ShopIN, BunEnd, ShopEndz, Shopping;//ショップに入ったか　文表示が終了したか  ショップ終了か 買い物中か
+    bool ShopIN;//ショップに入ったか　   
+    bool BunEnd;//文表示が終了したか
+    bool ShopEndz;//ショップ終了か
+    bool Shopping;//買い物中か
 
     List<WeaponData> WeponBuyData = new List<WeaponData>(0);//装備販売リスト
     int[] WeponBuyNo = new int[0];//販売する番号
     List<ItemData> ItemBuyData = new List<ItemData>(0);//アイテム販売リスト
     int[] ItemBuyNo = new int[0];//販売する番号
+    List<DataBase> BuyData = new List<DataBase>(0);//販売するアイテムや装備データ
+    List<DataBase> SellData = new List<DataBase>(0);//所持しているアイテム装備データ
     // Start is called before the first frame update
     void Start()
     {
-        SEPlayer = GetComponent<AudioSource>();
         TTime = TextInTime;
         ShopUIObj.SetActive(false);
         BuyShopUI.SetActive(false);
@@ -54,6 +65,8 @@ public class ShopSy : MonoBehaviour
         ShopSelctUI.SetActive(false);
         BackImag.gameObject.SetActive(false);
         BunUI.gameObject.SetActive(false);
+        BuSeUI.SetActive(false);
+        CountSelctUI.SetActive(false);
         ManeyText.transform.parent.gameObject.SetActive(false);
         BunUI.text = "";
         TextSt = "いらっしゃいませ";
@@ -68,6 +81,20 @@ public class ShopSy : MonoBehaviour
         {
             if (ItemDataList.DataList[i].Canibuy) ItemBuyData.Add(ItemDataList.DataList[i]);
         }
+
+        for(int i=0;i< WeponBuyData.Count; i++)//販売するリストに代入
+        {
+            DataBase WeponD = new DataBase();
+            WeponD.WeponDatas.WeponSetData = WeponBuyData[i];
+            BuyData.Add(WeponD);
+        }
+
+        for (int i = 0; i < ItemBuyData.Count; i++) //販売するリストに代入
+        {
+            DataBase WeponD = new DataBase();
+            WeponD.ItemDatas.ItemSetData = ItemBuyData[i];
+            BuyData.Add(WeponD);
+        }
     }
 
     // Update is called once per frame
@@ -75,7 +102,7 @@ public class ShopSy : MonoBehaviour
     {
         if (!ShopIN) return;
 
-        if (Bun < BunCount & !BunEnd)
+        if (Bun < BunCount & !BunEnd)//文表示システム
         {
             TTime -= Time.deltaTime;
             if (TTime < 0)
@@ -83,7 +110,7 @@ public class ShopSy : MonoBehaviour
                 Bun++;
                 TTime = TextInTime;
                 BunUI.text = TextSt.Substring(0, Bun);//こいつで表示する文字数指定できる（へぇー）
-                SEPlayer.PlayOneShot(Se);
+                AudioSystem.SEPlaye(Se);
                 if (!BunEnd & Bun >= BunCount)
                 {
                     Bun = 0;
@@ -92,7 +119,7 @@ public class ShopSy : MonoBehaviour
             }
         }
 
-        if (BunEnd & !Shopping & Input.anyKeyDown)
+        if (BunEnd & !Shopping & Input.anyKeyDown)//文表示終了後の処理
         {
             if (ShopEndz)
             {
@@ -105,6 +132,7 @@ public class ShopSy : MonoBehaviour
                 BackImag.gameObject.SetActive(false);
                 BunUI.gameObject.SetActive(false);
                 ShopUIObj.SetActive(false);
+                BuSeUI.SetActive(false);
                 PlayerSy.PlayerIventsEnd();
                 PlayerSy = null;
                 BunEnd = ShopEndz = Shopping = ShopIN = false;
@@ -115,12 +143,13 @@ public class ShopSy : MonoBehaviour
             ShopSelctUI.SetActive(true);
             ManeyText.transform.parent.gameObject.SetActive(true);
             BunUI.gameObject.SetActive(false);
+            SyokiButton.Select();
             Shopping = true;
         }
 
     }
 
-    public void PlayerSystemIN(PlayerTes PlayerSystem)//プレイヤーが話しかけてきたら
+    public void PlayerSystemIN(PlayerTes PlayerSystem)//プレイヤーが話しかけてきたら　プレイヤースクリプト
     {
         PlayerSy = PlayerSystem;
         PlayerDataupdate();
@@ -135,31 +164,52 @@ public class ShopSy : MonoBehaviour
         PlayerManey = PlayerSy.MoneyOUT();
         WeponHaveData = PlayerSy.WeaponDataListOUT();
         ItemHaveData = PlayerSy.ItemDataListOUT();
-        ManeyText.text = string.Format("所持金 : {0}", PlayerManey);
+        ManeyText.text = string.Format("所持金 : {0}㌷", PlayerManey);
+
+        SellData.Clear();
+        for (int i = 0; i < WeponHaveData.Count; i++)//販売するリストに代入
+        {
+            SellData.Add(WeponHaveData[i]);
+        }
+
+        for (int i = 0; i < ItemHaveData.Count; i++) //販売するリストに代入
+        {
+            SellData.Add(ItemHaveData[i]);
+        }
     }
 
-    public void BuyShopIN()
+    public void BuyShopIN()//販売開始
     {
         ShopSelctUI.SetActive(false);
         BuyShopUI.SetActive(true);
+        BuSeUI.SetActive(true);
+        BuSeSy.ButtunIN(BuyData, WeponHaveData,ItemHaveData,true);
     }
 
-    public void BuyShopEnd()
+    public void BuyShopEnd()//販売終了
     {
         ShopSelctUI.SetActive(true);
         BuyShopUI.SetActive(false);
+        BuSeUI.SetActive(false);
+        BuSeSy.ButtonDes();
+        SyokiButton.Select();
     }
 
-    public void SellShopIN()
+    public void SellShopIN()//売却開始
     {
         ShopSelctUI.SetActive(false);
         SellShopUI.SetActive(true);
+        BuSeUI.SetActive(true);
+        BuSeSy.ButtunIN(SellData, WeponHaveData, ItemHaveData, false);
     }
 
-    public void SellShopEND()
+    public void SellShopEND()//売却終了
     {
         ShopSelctUI.SetActive(true);
         SellShopUI.SetActive(false);
+        BuSeUI.SetActive(false);
+        BuSeSy.ButtonDes();
+        SyokiButton.Select();
     }
 
     public void ShopEnd()
@@ -175,8 +225,17 @@ public class ShopSy : MonoBehaviour
     }
 
 
-    public void BuyNoIN(int No)//購入した番号
+    public void BuyNoIN(DataBase SelctData,bool buy,int Quantity)//選択したデータ　 選択されたデータ情報,購入か売却,個数
     {
-
+        if (SelctData.WeponDatas.WeponSetData)//装備データだったら
+        {
+            PlayerSy.WeponDataIN(SelctData, buy,Quantity);
+        }
+        else if (SelctData.ItemDatas.ItemSetData)//アイテムデータだったら
+        {
+            PlayerSy.ItemDataIN(SelctData, buy, Quantity);
+        }
+        PlayerDataupdate();
+        BuSeSy.PlayerDataUPDate(SelctData,WeponHaveData,ItemHaveData);
     }
 }

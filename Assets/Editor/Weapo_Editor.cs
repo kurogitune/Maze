@@ -271,5 +271,7 @@ public class Weapo_Editor : EditorWindow//武器エディタ
     private void OnDestroy()
     {
         WeponList.DataList = WeaponDataList;
+        EditorUtility.SetDirty(WeponList);//指定したScriptObject変更を記録
+        AssetDatabase.SaveAssets();//ScriptObjectをセーブする
     }
 }

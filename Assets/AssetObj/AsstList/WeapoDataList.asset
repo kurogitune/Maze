@@ -12,4 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e634267656c6b9044a7b9aafcd85cfcd, type: 3}
   m_Name: WeapoDataList
   m_EditorClassIdentifier: 
-  DataList: []
+  DataList:
+  - {fileID: 11400000, guid: 3fa5dfcf9928a4c42a7b4d7471bebf01, type: 2}
+  - {fileID: 11400000, guid: 4727e05dce2d731448861e6252c3ef0e, type: 2}
+  - {fileID: 11400000, guid: 182834e5556c16c4eb355adaf7134838, type: 2}

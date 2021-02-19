@@ -13,6 +13,7 @@ public class FileSet : EditorWindow//初期フォルダー作成エディタ
     {
         try
         {
+            //以下に作成したいフォルダーを
             FolderSet("Scripts");
             FolderSet("Model");
             FolderSet("Audio");
@@ -23,6 +24,8 @@ public class FileSet : EditorWindow//初期フォルダー作成エディタ
             FolderSet("Resources");
             FolderSet("Material");
             FolderSet("Image");
+            FolderSet("UIFont");
+            //ここまで
 
             if (!FolderExist("Scenes"))
             {

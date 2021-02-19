@@ -208,5 +208,7 @@ public class EnemyEditor : EditorWindow//敵エディタ
     private void OnDestroy()
     {
         EnemyList.DataList = EnemyDataList;
+        EditorUtility.SetDirty(EnemyList);//指定したScriptObject変更を記録
+        AssetDatabase.SaveAssets();//ScriptObjectをセーブする
     }
 }

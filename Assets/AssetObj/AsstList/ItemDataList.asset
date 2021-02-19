@@ -12,4 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 48b1b663486e0af4e996639c2227618b, type: 3}
   m_Name: ItemDataList
   m_EditorClassIdentifier: 
-  DataList: []
+  DataList:
+  - {fileID: 11400000, guid: 57c59a66a75fbae4b9dac32bc10b61a6, type: 2}
+  - {fileID: 11400000, guid: 3074c68cf84d1cc4f8d306a416fbb7ff, type: 2}
+  - {fileID: 11400000, guid: ee8da875810ec8c4f96d9490002d728e, type: 2}

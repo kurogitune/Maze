@@ -252,5 +252,7 @@ public class Item_Editor : EditorWindow
     private void OnDestroy()
     {
         ItemList.DataList = ItemDataList;
+        EditorUtility.SetDirty(ItemList);//指定したScriptObject変更を記録
+        AssetDatabase.SaveAssets();//ScriptObjectをセーブする
     }
 }
